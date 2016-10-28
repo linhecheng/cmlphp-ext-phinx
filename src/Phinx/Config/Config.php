@@ -27,7 +27,11 @@
  * @subpackage Phinx\Config
  */
 namespace Phinx\Config;
+
 use Cml\Cml;
+use Cml\Console\Format\Colour;
+use Cml\Console\Format\Format;
+use Cml\Console\IO\Output;
 
 
 /**
@@ -66,6 +70,26 @@ class Config implements \ArrayAccess
             return $dir;
         } else {
             return Cml::getApplicationDir('secure_src') . DIRECTORY_SEPARATOR . 'databases' . DIRECTORY_SEPARATOR . 'migrations';
+        }
+    }
+
+    /**
+     * 显示数据库信息
+     *
+     */
+    public function echoAdapterInfo()
+    {
+        $config = isset($this->values['migration_use_db']) ? $this->values[$this->values['migration_use_db']] : $this->values['default_db'];
+
+        $format = new Format(['foregroundColors' => Colour::GREEN]);
+        $driver = explode('.', $config['driver']);
+        Output::writeln('using adapter ' . $format->format($driver[0]));
+        Output::writeln('using database ' . $format->format($config['master']['dbname']));
+        Output::writeln('using table prefix ' . $format->format($config['master']['tableprefix']));
+        if (isset($config['migration_use_table']) && !empty($config['migration_use_table'])) {
+            Output::writeln('using migration table ' . $format->format($config['migration_use_table']));
+        } else {
+            Output::writeln('using migration table ' . $format->format('phinxlog'));
         }
     }
 

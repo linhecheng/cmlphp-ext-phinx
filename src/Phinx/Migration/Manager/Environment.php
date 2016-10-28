@@ -61,6 +61,9 @@ class Environment
      */
     public function __construct($config)
     {
+        if (isset($config['migration_use_table']) && !empty($config['migration_use_table'])) {
+            $this->setSchemaTableName($config['migration_use_table']);
+        }
         $this->config = $config;
     }
 
@@ -214,7 +217,7 @@ class Environment
         }
 
         $config = $this->config;
-        $config = $config['default_db'];
+        $config = isset($config['migration_use_db']) ? $config[$config['migration_use_db']] : $config['default_db'];
         $driver = strtolower(substr($config['driver'], 0, strpos($config['driver'], '.')));
         $config = $config['master'];
 
@@ -226,7 +229,8 @@ class Environment
             'user' => $config['username'],
             'pass' => $config['pass'],
             'engine' => $config['engine'],
-            'table_prefix' => $config['tableprefix']
+            'table_prefix' => $config['tableprefix'],
+            'default_migration_table' => $this->getSchemaTableName()
         ];
         isset($host[1]) && $option['port'] = $host[1];
 
