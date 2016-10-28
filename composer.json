@@ -1,0 +1,25 @@
+{
+    "name": "linhecheng/cmlphp-ext-phinx",
+    "description": "修改自Phinx的数据库迁移工具",
+    "license": "Apache-2.0",
+    "support": {
+        "issues": "https://github.com/linhecheng/cmlphp-ext-phinx/issues",
+        "source": "https://github.com/linhecheng/cmlphp-ext-phinx"
+    },
+    "authors": [
+        {
+            "name": "linhecheng",
+            "email": "linhechengbugh@live.com",
+            "homepage": "http://51beautylife.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Phinx\\": "src/Phinx"
+        }
+    }
+}
