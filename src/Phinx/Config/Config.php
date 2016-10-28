@@ -86,8 +86,8 @@ class Config implements \ArrayAccess
         Output::writeln('using adapter ' . $format->format($driver[0]));
         Output::writeln('using database ' . $format->format($config['master']['dbname']));
         Output::writeln('using table prefix ' . $format->format($config['master']['tableprefix']));
-        if (isset($config['migration_use_table']) && !empty($config['migration_use_table'])) {
-            Output::writeln('using migration table ' . $format->format($config['migration_use_table']));
+        if (isset($this->values['migration_use_table']) && !empty($this->values['migration_use_table'])) {
+            Output::writeln('using migration table ' . $format->format($this->values['migration_use_table']));
         } else {
             Output::writeln('using migration table ' . $format->format('phinxlog'));
         }
