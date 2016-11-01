@@ -150,6 +150,9 @@ class Manager
         if ($format !== null) {
             switch ($format) {
                 case 'json':
+                    foreach($migrations as &$val) {
+                        $val['migration_status'] = preg_replace("#(.*?)m(.+?)([a-z]+)(.*?)\[0m#i", '${3}', $val['migration_status']);
+                    }
                     Output::writeln(json_encode(
                         array(
                             'pending_count' => count($this->getMigrations()),
