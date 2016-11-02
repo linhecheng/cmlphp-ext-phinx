@@ -91,80 +91,90 @@ class Manager
         $migrations = array();
         $hasDownMigration = false;
         $hasMissingMigration = false;
-        if (count($this->getMigrations())) {
-            // included and it will fix formatting issues (e.g drawing the lines)
-            Output::writeln('');
-            Output::writeln(' Status  Migration ID    Started              Finished             Migration Name ');
-            Output::writeln('----------------------------------------------------------------------------------');
+        is_null($format) && $format = 'text';
 
-            $env = $this->getEnvironment();
-            $versions = $env->getVersionLog();
-            $maxNameLength = $versions ? max(array_map(function ($version) {
-                return strlen($version['migration_name']);
-            }, $versions)) : 0;
+        $env = $this->getEnvironment();
+        $versions = $env->getVersionLog();
 
-            foreach ($this->getMigrations() as $migration) {
-                $version = array_key_exists($migration->getVersion(), $versions) ? $versions[$migration->getVersion()] : false;
-                if ($version) {
-                    $status = Colour::colour('     up ', Colour::GREEN);
-                } else {
-                    $hasDownMigration = true;
-                    $status = Colour::colour('   down ', Colour::RED);
-                }
-                $maxNameLength = max($maxNameLength, strlen($migration->getName()));
+        if ($format == 'text') {
+            if (count($this->getMigrations())) {
+                // included and it will fix formatting issues (e.g drawing the lines)
+                Output::writeln('');
+                Output::writeln(' Status  Migration ID    Started              Finished             Migration Name ');
+                Output::writeln('----------------------------------------------------------------------------------');
 
-                Output::writeln(sprintf(
-                    '%s %14.0f  %19s  %19s  ' . Colour::colour('%s', Colour::CYAN),
-                    $status, $migration->getVersion(), $version['start_time'], $version['end_time'], $migration->getName()
-                ));
+                $maxNameLength = $versions ? max(array_map(function ($version) {
+                    return strlen($version['migration_name']);
+                }, $versions)) : 0;
 
-                if ($version && $version['breakpoint']) {
-                    Output::writeln(Colour::colour('         BREAKPOINT SET', Colour::RED));
-                }
+                foreach ($this->getMigrations() as $migration) {
+                    $version = array_key_exists($migration->getVersion(), $versions) ? $versions[$migration->getVersion()] : false;
+                    if ($version) {
+                        $status = Colour::colour('     up ', Colour::GREEN);
+                    } else {
+                        $hasDownMigration = true;
+                        $status = Colour::colour('   down ', Colour::RED);
+                    }
+                    $maxNameLength = max($maxNameLength, strlen($migration->getName()));
 
-                $migrations[] = array('migration_status' => trim(strip_tags($status)), 'migration_id' => sprintf('%14.0f', $migration->getVersion()), 'migration_name' => $migration->getName());
-                unset($versions[$migration->getVersion()]);
-            }
-
-            if (count($versions)) {
-                $hasMissingMigration = true;
-                foreach ($versions as $missing => $version) {
                     Output::writeln(sprintf(
-                        Colour::colour('     up', Colour::RED) . '  %14.0f  %19s  %19s  ' . Colour::colour('%s', Colour::CYAN) . Colour::colour('  ** MISSING **', Colour::RED),
-                        $missing, $version['start_time'], $version['end_time'], str_pad($version['migration_name'], $maxNameLength, ' ')
+                        '%s %14.0f  %19s  %19s  ' . Colour::colour('%s', Colour::CYAN),
+                        $status, $migration->getVersion(), $version['start_time'], $version['end_time'], $migration->getName()
                     ));
 
                     if ($version && $version['breakpoint']) {
                         Output::writeln(Colour::colour('         BREAKPOINT SET', Colour::RED));
                     }
+
+                    $migrations[] = [
+                        'migration_status' => trim(strip_tags($status)), 'migration_id' => sprintf('%14.0f', $migration->getVersion()), 'migration_name' => $migration->getName()
+                    ];
+                    unset($versions[$migration->getVersion()]);
                 }
+
+                if (count($versions)) {
+                    $hasMissingMigration = true;
+                    foreach ($versions as $missing => $version) {
+                        Output::writeln(sprintf(
+                            Colour::colour('     up', Colour::RED) . '  %14.0f  %19s  %19s  ' . Colour::colour('%s', Colour::CYAN) . Colour::colour('  ** MISSING **', Colour::RED),
+                            $missing, $version['start_time'], $version['end_time'], str_pad($version['migration_name'], $maxNameLength, ' ')
+                        ));
+
+                        if ($version && $version['breakpoint']) {
+                            Output::writeln(Colour::colour('         BREAKPOINT SET', Colour::RED));
+                        }
+                    }
+                }
+            } else {
+                // there are no migrations
+                Output::writeln('');
+                Output::writeln('There are no available migrations. Try creating one using the ' . Colour::colour('create', Colour::GREEN) . ' command.');
             }
         } else {
-            // there are no migrations
             Output::writeln('');
-            Output::writeln('There are no available migrations. Try creating one using the ' . Colour::colour('create', Colour::GREEN) . ' command.');
-        }
-
-        // write an empty line
-        Output::writeln('');
-        if ($format !== null) {
             switch ($format) {
                 case 'json':
-                    foreach($migrations as &$val) {
-                        $val['migration_status'] = preg_replace("#(.*?)m(.+?)([a-z]+)(.*?)\[0m#i", '${3}', $val['migration_status']);
+                    foreach ($this->getMigrations() as $migration) {
+                        $version = array_key_exists($migration->getVersion(), $versions) ? $versions[$migration->getVersion()] : false;
+                        $status = $version ? 'up' : 'down';
+                        $migrations[] = [
+                            'migration_status' => trim(strip_tags($status)), 'migration_id' => sprintf('%14.0f', $migration->getVersion()), 'migration_name' => $migration->getName()
+                        ];
                     }
                     Output::writeln(json_encode(
                         array(
-                            'pending_count' => count($this->getMigrations()),
+                            'pending_count' => count($migrations),
                             'migrations' => $migrations
                         )
                     ));
                     break;
                 default:
-                    Output::writeln(Colour::colour('Unsupported format: ' . $format, Colour::GREEN));
+                    Output::writeln(Colour::colour('Unsupported format: ' . $format, Colour::RED));
             }
         }
 
+        // write an empty line
+        Output::writeln('');
         if ($hasMissingMigration) {
             return self::EXIT_STATUS_MISSING;
         } else if ($hasDownMigration) {
