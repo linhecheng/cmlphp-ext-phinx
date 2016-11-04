@@ -227,7 +227,7 @@ class Environment
             'name' => $config['dbname'],
             'charset' => $config['charset'],
             'user' => $config['username'],
-            'pass' => $config['pass'],
+            'pass' => $config['password'],
             'engine' => $config['engine'],
             'table_prefix' => $config['tableprefix'],
             'default_migration_table' => $this->getSchemaTableName()
