@@ -36,6 +36,27 @@ use Phinx\Seed\SeedInterface;
 class Environment
 {
     /**
+     * 导出是否将多个迁移合并
+     *
+     * @var mixed
+     */
+    private static $exportIsMerge = false;
+
+    /**
+     * 设置导出路径
+     *
+     * @var bool|string
+     */
+    protected static $exportPath = false;
+
+    /**
+     * 设置导出文件路径
+     *
+     * @var bool|string
+     */
+    protected static $exportFile = false;
+
+    /**
      * @var array
      */
     protected $config = [];
@@ -79,6 +100,10 @@ class Environment
         $startTime = time();
         $direction = ($direction === MigrationInterface::UP) ? MigrationInterface::UP : MigrationInterface::DOWN;
         $migration->setAdapter($this->getAdapter());
+
+        if ($this->getExportPath()) {
+            $this->setExportFile($migration->getName() . '.sql', $direction);
+        }
 
         // begin the transaction if the adapter supports it
         if ($this->getAdapter()->hasTransactions()) {
@@ -124,6 +149,9 @@ class Environment
     {
         $seed->setAdapter($this->getAdapter());
 
+        if ($this->getExportPath()) {
+            $this->setExportFile($seed->getName() . '.sql', 'seed');
+        }
         // begin the transaction if the adapter supports it
         if ($this->getAdapter()->hasTransactions()) {
             $this->getAdapter()->beginTransaction();
@@ -268,5 +296,75 @@ class Environment
     public function getSchemaTableName()
     {
         return $this->schemaTableName;
+    }
+
+    /**
+     * 获取导出路径
+     *
+     * @return string|bool
+     */
+    public function getExportPath()
+    {
+        return self::$exportPath;
+    }
+
+    /**
+     * 设置导出路径
+     *
+     * @param string $export 导出的路径
+     * @param bool $merge 是否将本次执行合并成一个文件输出
+     *
+     * @return $this
+     */
+    public function setExportPath($export, $merge = false)
+    {
+        self::$exportIsMerge = $merge;
+        self::$exportPath = $export;
+        return $this;
+    }
+
+    /**
+     * 设置导出文件名
+     *
+     * @param string $migrate 迁移的名称
+     * @param string $type 类型
+     *
+     * @return $this
+     */
+    private function setExportFile($migrate, $type = 'up')
+    {
+        self::$exportFile = self::$exportPath . DIRECTORY_SEPARATOR . $type . DIRECTORY_SEPARATOR;
+        is_dir(self::$exportFile) || mkdir(self::$exportFile, 0700, true);
+        self::$exportFile .= self::$exportIsMerge ? self::$exportIsMerge : $migrate;
+        self::$exportIsMerge || file_put_contents(self::$exportFile, "#start\n");
+        return $this;
+    }
+
+    /**
+     * 导出sql到文本
+     *
+     * @param string $sql 要写入的sql
+     * @param string $table 迁移表的表名
+     */
+    public static function exportSql($sql, $table)
+    {
+        if (
+            self::$exportFile
+            && false === stripos($sql, $table)
+            && false === stripos($sql, 'INFORMATION_SCHEMA')
+            && false === stripos($sql, 'SHOW INDEXES FROM')
+        ) {
+            file_put_contents(self::$exportFile, rtrim($sql, ';') . ";\n", FILE_APPEND);
+        }
+    }
+
+    /**
+     * 导出sql到文本
+     *
+     * @return bool
+     */
+    public static function isExport()
+    {
+        return !empty(self::$exportFile);
     }
 }

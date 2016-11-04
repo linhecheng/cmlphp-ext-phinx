@@ -122,6 +122,21 @@ class Config implements \ArrayAccess
     }
 
     /**
+     * 返回导出的sql文件存放路径
+     *
+     * @return bool|string
+     */
+    public function getExportPath()
+    {
+        $dir = Cml::getApplicationDir('migration_export_path');
+        if ($dir) {
+            return $dir;
+        } else {
+            return Cml::getApplicationDir('secure_src') . DIRECTORY_SEPARATOR . 'databases' . DIRECTORY_SEPARATOR . 'sql';
+        }
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function offsetSet($id, $value)
